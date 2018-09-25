@@ -34,19 +34,23 @@ module.exports.login = async (event, context) => {
 
     try {
         await validator.login(body);
-        let item = await middlewares.findUserByEmail(body.email, 'users');
-        const user = item.Items[0];
+        const item = await middlewares.findUserByEmail(body.email, 'users');
 
         if (!item.Count)
             return response(403, 'Invalid email address or password');
+
+        let user = item.Items[0]; // Get user data
 
         await middlewares.comparePassword(body.password + user.salt, user.password);
 
         if (!user.isVerified)
             return response(400, 'Email address not verified!');
 
-        
+        user = await middlewares.createUserToken(user);
+        await middlewares.updateUserToken(user);
+        user = await middlewares.formatUserData(user);
 
+        return response(200, user);
     } catch (error) {
         return response(400, error);
     }

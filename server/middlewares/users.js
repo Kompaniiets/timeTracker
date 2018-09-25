@@ -7,7 +7,7 @@ const MailerFactory = require('../aws/ses/factory');
 const mailer = MailerFactory.getInstance();
 const CONSTANTS = require('../constants');
 const config = require('../../config');
-const jwt = require('jsonwebtoken');
+const jwt = require('../helpers/jwt');
 
 class UsersMiddleware {
     /*
@@ -71,6 +71,7 @@ class UsersMiddleware {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 isVerified: false,
+                accessToken: 'null',
                 createdAt: timestamp,
                 updatedAt: timestamp,
             }
@@ -78,6 +79,24 @@ class UsersMiddleware {
 
         await dynamoDb.put(params);
         return params.Item;
+    }
+
+    /*
+    Update user token
+     */
+    static updateUserToken(user) {
+        const params = {
+            TableName: 'users',
+            Key: {
+                'id' : user.id,
+            },
+            UpdateExpression: 'set accessToken = :accTok',
+            ExpressionAttributeValues: {
+                ':accTok' : user.session.accessToken
+            }
+        };
+
+        return dynamoDb.update(params);
     }
 
     /*
@@ -106,7 +125,7 @@ class UsersMiddleware {
             userId: user.id,
             createTime: Date.now(),
             expiresAt: Date.now() + (24 * 60 * 60 * 1000)
-        }, config.jwt.jwtKey);
+        });
 
         const emailParams = {
             Template: CONSTANTS.SES_TEMPLATES.EMAIL_CONFIRMATION,
@@ -143,14 +162,7 @@ class UsersMiddleware {
     Verify confirmation email token
      */
     static verifyEmailToken(token) {
-        return new Promise((resolve, reject) => jwt.verify(token, config.jwt.jwtKey, (err, decoded) => {
-            if (err) return reject(err);
-
-            if (Date.now() > decoded.expiresAt) {
-                return reject('Token lifetime is expired');
-            }
-            return resolve(decoded);
-        }));
+        return jwt.verify(token);
     }
 
     /*
@@ -171,6 +183,42 @@ class UsersMiddleware {
                     throw ('Invalid token!');
                 }
             })
+    }
+
+    /*
+    Create user access and refresh token
+     */
+    static createUserToken(user) {
+        const tokenParams = {
+            createTime: Date.now(),
+            id: user.id,
+            key: uuid(),
+        };
+
+        const userData = user;
+        userData.session = {};
+        // Create access token
+        userData.session.accessToken = CONSTANTS.AUTHORIZATION.STRATEGY + jwt.sign({
+            exp: tokenParams.createTime + config.jwt.jwtLifeTime,
+            data: tokenParams,
+        });
+        // Create refresh token
+        userData.session.refreshToken = jwt.sign({
+            exp: tokenParams.createTime + config.jwt.jwtRefreshLifeTime,
+            data: tokenParams,
+        });
+        userData.session.expiresAt = tokenParams.createTime + config.jwt.jwtLifeTime;
+
+        return userData
+    }
+
+    static async formatUserData(user) {
+        delete user.password;
+        delete user.salt;
+        delete user.isVerified;
+        delete user.accessToken;
+
+        return user;
     }
 }
 
