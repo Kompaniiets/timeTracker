@@ -1,0 +1,88 @@
+service: serverless-time-tracker
+
+# frameworkVersion: '=X.X.X'
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: prod
+  region: us-east-1
+  environment:
+      NODE_ENV: 'dev'
+      USERS_TABLE: 'users'
+      TOKENS_TABLE: 'tokens'
+  iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+        Resource: "*"
+
+functions:
+  home:
+    handler: server/functions/home.home
+    description: Simple home function.
+    events:
+      - http:
+          method: GET
+          path: /home
+          private: false
+  register:
+    handler: server/functions/user.register
+    description: User register function.
+    events:
+      - http:
+          method: POST
+          path: /register
+          private: false
+          cors: true
+  login:
+    handler: server/functions/user.login
+    description: User login function.
+    events:
+      - http:
+          method: POST
+          path: /login
+          private: false
+          cors: true
+  confirm:
+    handler: server/functions/user.confirm
+    description: Email confirmation function.
+    events:
+      - http:
+          method: GET
+          path: /me/confirm
+          private: false
+
+resources:
+  Resources:
+    UsersDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        KeySchema:
+          - AttributeName: "id"
+            KeyType: "HASH"
+        AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.USERS_TABLE}
+    TokensDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        KeySchema:
+          - AttributeName: "userId"
+            KeyType: "HASH"
+        AttributeDefinitions:
+          - AttributeName: "userId"
+            AttributeType: "S"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.TOKENS_TABLE}
