@@ -162,7 +162,7 @@ class UsersMiddleware {
     Verify confirmation email token
      */
     static verifyEmailToken(token) {
-        return jwt.verify(token);
+        return jwt.verify(token, false);
     }
 
     /*
@@ -212,6 +212,9 @@ class UsersMiddleware {
         return userData
     }
 
+    /*
+    Formatting user data response
+     */
     static async formatUserData(user) {
         delete user.password;
         delete user.salt;

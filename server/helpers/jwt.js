@@ -6,11 +6,11 @@ class JwtManager {
         return jwt.sign(data, config.jwt.jwtKey);
     }
 
-    static verify(token) {
-        return new Promise((resolve, reject) => jwt.verify(token, config.jwt.jwtKey, (err, decoded) => {
+    static async verify(token, ignoreExp) {
+        return new Promise((resolve, reject) => jwt.verify(token, config.jwt.jwtKey, { ignoreExpiration: ignoreExp }, (err, decoded) => {
             if (err) return reject(err);
 
-            if (Date.now() > decoded.expiresAt) {
+            if (Date.now() > decoded.exp) {
                 return reject('Token lifetime is expired');
             }
             return resolve(decoded);

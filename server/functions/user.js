@@ -19,18 +19,18 @@ module.exports.register = async (event, context) => {
         user = await middlewares.encryptPassword(body);
         user = await middlewares.saveUser(user);
         await middlewares.sendEmail(user);
+
+        return response(200, {});
     } catch (error) {
         return response(400, error);
     }
-
-    return response(200, {});
 };
 
 /*
  Login handler
   */
 module.exports.login = async (event, context) => {
-    let body = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
 
     try {
         await validator.login(body);

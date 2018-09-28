@@ -2,6 +2,35 @@ service: serverless-time-tracker
 
 # frameworkVersion: '=X.X.X'
 
+plugins:
+  - serverless-aws-documentation
+
+custom:
+  documentation:
+    api:
+      info:
+        version: '1'
+        title: TimeTracker API
+        description: TimeTracker API
+
+    models:
+      -
+        name: UserRegistration
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+            confirmPassword:
+              type: string
+            firstName:
+              type: string
+            lastName:
+              type: string
+
 provider:
   name: aws
   runtime: nodejs8.10
@@ -11,6 +40,7 @@ provider:
       NODE_ENV: 'dev'
       USERS_TABLE: 'users'
       TOKENS_TABLE: 'tokens'
+      WORK_LOGS_TABLE: 'workLogs'
   iamRoleStatements:
       - Effect: Allow
         Action:
@@ -23,38 +53,73 @@ provider:
 functions:
   home:
     handler: server/functions/home.home
-    description: Simple home function.
+    description: Simple home.
     events:
       - http:
           method: GET
           path: /home
-          private: false
   register:
     handler: server/functions/user.register
-    description: User register function.
+    description: User register.
     events:
       - http:
           method: POST
           path: /register
-          private: false
           cors: true
+          documentation:
+            summary: Takes a request body
+            description: User registration
+            requestModels:
+              "application/json": UserRegistration
+            methodResponses:
+              -
+                statusCode: "200"
+                responseBody:
+                  description: "Response body description"
   login:
     handler: server/functions/user.login
-    description: User login function.
+    description: User login.
     events:
       - http:
           method: POST
           path: /login
-          private: false
           cors: true
   confirm:
     handler: server/functions/user.confirm
-    description: Email confirmation function.
+    description: Email confirmation.
     events:
       - http:
           method: GET
           path: /me/confirm
-          private: false
+  addLog:
+    handler: server/functions/workLogs.createLog
+    description: Add new working log.
+    events:
+      - http:
+          method: POST
+          path: /users/logs
+          cors: true
+          authorizer: authorizerFunc
+  getAllUserLogs:
+    handler: server/functions/workLogs.getAllLogs
+    description: Get all user working logs.
+    events:
+      - http:
+          method: GET
+          path: /users/logs
+          cors: true
+          authorizer: authorizerFunc
+  getUserLogById:
+    handler: server/functions/workLogs.getLogById
+    description: Get user working log by id.
+    events:
+      - http:
+          method: GET
+          path: /users/{id}/logs
+          cors: true
+          authorizer: authorizerFunc
+  authorizerFunc:
+      handler: server/functions/authorizer.auth
 
 resources:
   Resources:
@@ -86,3 +151,17 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.TOKENS_TABLE}
+    WorkLogsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        KeySchema:
+          - AttributeName: "id"
+            KeyType: "HASH"
+        AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.WORK_LOGS_TABLE}
