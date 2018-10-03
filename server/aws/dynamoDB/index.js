@@ -1,8 +1,13 @@
 const AWS = require('aws-sdk');
 const config = require('../../../config');
-AWS.config.update(config.aws);
+// AWS.config.update(config.aws);
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+// const dynamoDb = new AWS.DynamoDB.DocumentClient({});
+
+const dynamoDb = new AWS.DynamoDB.DocumentClient({
+    region: 'localhost',
+    endpoint: 'http://localhost:8000'
+});
 
 class DynamoDB {
     static async get(params) {

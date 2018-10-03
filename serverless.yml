@@ -4,15 +4,19 @@ service: serverless-time-tracker
 
 plugins:
   - serverless-aws-documentation
+  - serverless-dynamodb-local
+  - serverless-offline
 
 custom:
+  dynamodb:
+    start:
+      migrate: true
   documentation:
     api:
       info:
         version: '1'
         title: TimeTracker API
         description: TimeTracker API
-
     models:
       -
         name: UserRegistration

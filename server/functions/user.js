@@ -19,11 +19,11 @@ module.exports.register = async (event, context) => {
         user = await middlewares.encryptPassword(body);
         user = await middlewares.saveUser(user);
         await middlewares.sendEmail(user);
-
-        return response(200, {});
     } catch (error) {
         return response(400, error);
     }
+
+    return response(200, {});
 };
 
 /*

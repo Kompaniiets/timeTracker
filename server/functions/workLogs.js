@@ -10,6 +10,7 @@ const moment = require('moment');
 module.exports.createLog = async (event, context) => {
     try {
         const body = JSON.parse(event.body);
+        let id, item;
 
         await validator.addLog(body);
 
@@ -21,12 +22,13 @@ module.exports.createLog = async (event, context) => {
         if (logs.Count)
             return response(400, 'You already have logs in this time range!');
 
-        await middlewares.saveTime(userId, startDate, endDate, body.description);
+        id = await middlewares.saveTime(userId, startDate, endDate, body.description);
+        console.log(id);
+        item = await middlewares.getLogById(id);
+        return response(200, { data: item.Item });
     } catch (error) {
         return response(400, error);
     }
-
-    return response(200, 'Work log successfully created');
 };
 
 /*
@@ -35,11 +37,11 @@ module.exports.createLog = async (event, context) => {
 module.exports.getAllLogs = async (event, context) => {
     try {
         const query = event.queryStringParameters || {};
-        // const limit =  (!Object.keys(query).length && query.limit) ? parseInt(query.limit) : 2;
-        const lastKey = (!Object.keys(query).length && query.lastKey) ? query.lastKey : undefined;
+        const limit = (Object.keys(query).length && query.limit) ? parseInt(query.limit) : 5;
+        const lastKey = (Object.keys(query).length && query.lastKey) ? { id: query.lastKey } : undefined;
         const userId = event.requestContext.authorizer.principalId;
 
-        const items = await middlewares.getAllLogs(userId, lastKey);
+        const items = await middlewares.getAllLogs(userId, limit, lastKey);
         return response(200, items);
     } catch (error) {
         return response(400, error);

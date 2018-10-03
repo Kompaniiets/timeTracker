@@ -25,10 +25,12 @@ class WorksMiddleware {
     Save working log time
      */
     static async saveTime(userId, start, end, description) {
+        const id = uuid();
+
         const params = {
             TableName: 'workLogs',
             Item: {
-                id: uuid(),
+                id: id,
                 userId: userId,
                 startTime: start,
                 endTime: end,
@@ -38,14 +40,16 @@ class WorksMiddleware {
             }
         };
 
-        return dynamoDb.put(params);
+        await dynamoDb.put(params);
+        return id;
     }
 
     /*
     Get all user log time
      */
-    static getAllLogs(userId, LastEvaluatedKey) {
+    static async getAllLogs(userId, limit, LastEvaluatedKey) {
         const params = {
+            TableName: 'workLogs',
             ExpressionAttributeValues: {
                 ':uId': userId,
             },
@@ -53,14 +57,17 @@ class WorksMiddleware {
                 "#userId": "userId",
             },
             FilterExpression: '#userId = :uId',
-            TableName: 'workLogs'
+            // Limit: limit
         };
 
-        if (typeof LastEvaluatedKey !== 'undefined') {
-            params.ExclusiveStartKey = LastEvaluatedKey;
-        }
+        return await scanExecute(params, limit, LastEvaluatedKey);
 
-        return dynamoDb.scan(params);
+        // let items = [];
+        // if (typeof LastEvaluatedKey !== 'undefined') {
+        //     params.ExclusiveStartKey = LastEvaluatedKey;
+        // }
+        //
+        // return dynamoDb.scan(params);
     }
 
     static getLogById(id) {
@@ -74,5 +81,34 @@ class WorksMiddleware {
         return dynamoDb.get(params);
     }
 }
+
+const scanExecute = async function (params, limit, LastEvaluatedKey) {
+    if (typeof LastEvaluatedKey !== 'undefined') {
+        params.ExclusiveStartKey = LastEvaluatedKey;
+    }
+
+    params.Limit = limit;
+
+    const result = await dynamoDb.scan(params);
+
+    if (result.Items.length < limit) {
+        if(result.LastEvaluatedKey) {
+            limit = limit - result.Items.length;
+            LastEvaluatedKey = result.LastEvaluatedKey;
+
+            const data = await scanExecute(params, limit, LastEvaluatedKey);
+
+            result.Items = result.Items.concat(data.Items);
+            result.Count = result.Count + data.Count;
+            result.ScannedCount = result.ScannedCount + data.ScannedCount;
+            result.LastEvaluatedKey = data.LastEvaluatedKey;
+
+            return result;
+        }
+        return result;
+    } else {
+        return result;
+    }
+};
 
 module.exports = WorksMiddleware;

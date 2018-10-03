@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "init-templates": "node ./server/aws/ses/initTemplates.js",
-    "deploy": "serverless deploy -v"
+    "deploy": "serverless deploy -v",
+    "sls-offline": "serverless offline start"
   },
   "author": "Ihor Kompaniets",
   "license": "ISC",
@@ -16,5 +17,9 @@
     "moment": "^2.22.2",
     "serverless-aws-documentation": "^1.1.0",
     "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "serverless-dynamodb-local": "^0.2.35",
+    "serverless-offline": "^3.25.17"
   }
 }

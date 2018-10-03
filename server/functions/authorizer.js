@@ -1,12 +1,15 @@
 const dynamoDb = require('../aws/dynamoDB');
 const jwt = require('../helpers/jwt');
 const CONSTANTS = require('../constants');
+const response = require('../helpers/response');
 
 /*
 Check user access token
  */
-module.exports.auth = async (event, context, callback) => {
+module.exports.auth = (event, context, callback) => {
     const authToken = event.authorizationToken;
+    let itemData;
+
     if (!authToken)
         return response(403, 'Forbidden');
 
@@ -18,17 +21,16 @@ module.exports.auth = async (event, context, callback) => {
         TableName: 'users',
     };
 
-    try {
-        const item = await dynamoDb.scan(params);
-        if (!item.Count)
-            return response(403, 'Forbidden');
+    dynamoDb.scan(params)
+        .then((item) => {
+            if (!item.Count)
+                return response(403, 'Forbidden');
 
-        await jwt.verify(authToken.replace(CONSTANTS.AUTHORIZATION.STRATEGY, ''), false);
-
-        return callback(null, generatePolicy(item.Items[0].id, 'Allow', event.methodArn));
-    } catch (error) {
-        return callback(error);
-    }
+            itemData = item.Items[0].id;
+        })
+        .then(() => jwt.verify(authToken.replace(CONSTANTS.AUTHORIZATION.STRATEGY, ''), false))
+        .then(() => callback(null, generatePolicy(itemData, 'Allow', event.methodArn)))
+        .catch((err) => callback(err));
 };
 
 const generatePolicy = function(principalId, effect, resource) {
