@@ -34,3 +34,9 @@ Create mail templates
 ```sh
 $ npm run init-templates
 ```
+
+Run serverless offline
+-----------------------------
+```sh
+$ npm run sls-offline
+```

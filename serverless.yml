@@ -95,6 +95,15 @@ functions:
       - http:
           method: GET
           path: /me/confirm
+  logout:
+    handler: server/functions/user.logout
+    description: User logout.
+    events:
+      - http:
+          method: POST
+          path: /logout
+          cors: true
+          authorizer: authorizerFunc
   addLog:
     handler: server/functions/workLogs.createLog
     description: Add new working log.

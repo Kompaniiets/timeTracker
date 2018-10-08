@@ -100,6 +100,25 @@ class UsersMiddleware {
     }
 
     /*
+    Update user
+     */
+    static logoutUser(id) {
+        const params = {
+            TableName: 'users',
+            Key: {
+                'id' : id,
+            },
+            UpdateExpression: 'set accessToken = :accTok, updatedAt = :updAt',
+            ExpressionAttributeValues: {
+                ':accTok' : 'null',
+                ':updAt': timestamp,
+            }
+        };
+
+        return dynamoDb.update(params);
+    }
+
+    /*
     Update user data
      */
     static updateIsVerifiedFlag(user) {

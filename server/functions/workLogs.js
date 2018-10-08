@@ -42,6 +42,8 @@ module.exports.getAllLogs = async (event, context) => {
         const userId = event.requestContext.authorizer.principalId;
 
         const items = await middlewares.getAllLogs(userId, limit, lastKey);
+        items.Count = await middlewares.getLogsCount(userId);
+
         return response(200, items);
     } catch (error) {
         return response(400, error);

@@ -72,3 +72,17 @@ module.exports.confirm = async (event, context) => {
 
     return response(200, 'OK');
 };
+
+/*
+ User logout
+ */
+module.exports.logout = async (event, context) => {
+    try {
+        const userId = event.requestContext.authorizer.principalId;
+        await middlewares.logoutUser(userId);
+
+        return response(204, {});
+    } catch (error) {
+        return response(400, error);
+    }
+};

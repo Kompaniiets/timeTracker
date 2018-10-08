@@ -57,17 +57,9 @@ class WorksMiddleware {
                 "#userId": "userId",
             },
             FilterExpression: '#userId = :uId',
-            // Limit: limit
         };
 
         return await scanExecute(params, limit, LastEvaluatedKey);
-
-        // let items = [];
-        // if (typeof LastEvaluatedKey !== 'undefined') {
-        //     params.ExclusiveStartKey = LastEvaluatedKey;
-        // }
-        //
-        // return dynamoDb.scan(params);
     }
 
     static getLogById(id) {
@@ -80,8 +72,27 @@ class WorksMiddleware {
 
         return dynamoDb.get(params);
     }
+
+    static async getLogsCount(userId) {
+        const params = {
+            TableName: 'workLogs',
+            ExpressionAttributeValues: {
+                ':uId': userId,
+            },
+            ExpressionAttributeNames: {
+                "#userId": "userId",
+            },
+            FilterExpression: '#userId = :uId',
+        };
+
+        return await dynamoDb.scan(params)
+            .then((result) => result.Count);
+    }
 }
 
+/*
+ Function for recursive scan table
+ */
 const scanExecute = async function (params, limit, LastEvaluatedKey) {
     if (typeof LastEvaluatedKey !== 'undefined') {
         params.ExclusiveStartKey = LastEvaluatedKey;
