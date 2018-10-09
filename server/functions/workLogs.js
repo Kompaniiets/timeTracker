@@ -23,7 +23,6 @@ module.exports.createLog = async (event, context) => {
             return response(400, 'You already have logs in this time range!');
 
         id = await middlewares.saveTime(userId, startDate, endDate, body.description);
-        console.log(id);
         item = await middlewares.getLogById(id);
         return response(200, { data: item.Item });
     } catch (error) {
